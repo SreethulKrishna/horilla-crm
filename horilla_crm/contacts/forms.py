@@ -1,19 +1,23 @@
-"""
+﻿"""
 Forms for the Contacts app.
 
 Includes:
 - Multi-step form for creating and updating contacts.
 - Form for assigning child contacts while preventing circular references.
-- Validation logic for parent–child relationships between contacts.
+- Validation logic for parent-child relationships between contacts.
 """
 
+# Third-party imports (Django)
 from django import forms
-from django.urls import reverse_lazy
-from django.utils.translation import gettext_lazy as _
 
-from horilla_core.mixins import OwnerQuerysetMixin
-from horilla_generics.forms import HorillaModelForm, HorillaMultiStepForm
+from horilla.contrib.core.mixins import OwnerQuerysetMixin
+from horilla.contrib.generics.forms import HorillaModelForm, HorillaMultiStepForm
 
+# First-party / Horilla imports
+from horilla.urls import reverse_lazy
+from horilla.utils.translation import gettext_lazy as _
+
+# Local imports
 from .models import Contact
 
 
@@ -58,7 +62,7 @@ class ContactFormClass(OwnerQuerysetMixin, HorillaMultiStepForm):
             self.fields["is_primary"].required = False
 
 
-class ContactSingleForm(HorillaModelForm):
+class ContactSingleForm(OwnerQuerysetMixin, HorillaModelForm):
     """
     Custom form for Contact to add HTMX attributes
     Inherits from HorillaModelForm to preserve all existing behavior.
@@ -104,7 +108,7 @@ class ChildContactForm(forms.Form):
                 "class": "select2-pagination w-full text-sm",
                 "data-placeholder": "Select Contact",
                 "data-url": reverse_lazy(
-                    "horilla_generics:model_select2",
+                    "generics:model_select2",
                     kwargs={"app_label": "contacts", "model_name": "Contact"},
                 ),
                 "data-field-name": "contact",
@@ -196,6 +200,7 @@ class ChildContactForm(forms.Form):
         return contact
 
     def clean(self):
+        """Validate that a contact is selected for child-contact assignment."""
         cleaned_data = super().clean()
         contact = cleaned_data.get("contact")
 

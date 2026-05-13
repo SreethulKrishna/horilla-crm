@@ -3,19 +3,23 @@ Signal handlers for Opportunities in Horilla CRM.
 Handles automatic updates when company-related events occur, e.g., currency change.
 """
 
+# Standard library imports
 import threading
 from decimal import Decimal
 
-from django.apps import apps
-from django.db import models
+# Third-party imports (Django)
 from django.db.models.signals import post_save, pre_save
 from django.dispatch import Signal, receiver
-from django.http import HttpResponse
-from django.shortcuts import render
-from django.urls import reverse_lazy
 
-from horilla_core.models import HorillaUser
-from horilla_core.signals import company_currency_changed
+# First-party / Horilla imports
+from horilla.apps import apps
+from horilla.auth.models import User
+from horilla.contrib.core.models import TeamRole
+from horilla.contrib.core.signals import company_currency_changed
+from horilla.contrib.keys.models import ShortcutKey
+from horilla.db import models
+from horilla.shortcuts import render
+from horilla.urls import reverse_lazy
 from horilla_crm.leads.signals import lead_stage_created
 from horilla_crm.opportunities.models import (
     Opportunity,
@@ -25,7 +29,6 @@ from horilla_crm.opportunities.models import (
     OpportunitySplitType,
     OpportunityTeamMember,
 )
-from horilla_keys.models import ShortcutKey
 
 _thread_locals = threading.local()
 
@@ -51,26 +54,16 @@ def handle_lead_stage_group_created(
             request, "opportunity_stage/oppor_stages_initialize.html", context
         )
 
-    return HttpResponse(
-        """
-        <script>
-            closeModal();
-            $('#reloadButton').click();
-            openContentModal();
-            var div = document.createElement('div');
-            div.setAttribute('hx-get', '%s');
-            div.setAttribute('hx-target', '#contentModalBox');
-            div.setAttribute('hx-trigger', 'load');
-            div.setAttribute('hx-swap', 'innerHTML');
-            document.body.appendChild(div);
-            htmx.process(div);
-        </script>
-        """
-        % reverse_lazy(
-            "opportunities:load_opp_stages", kwargs={"company_id": company.id}
-        ),
-        headers={"X-Debug": "Modal transition in progress"},
+    url = reverse_lazy(
+        "opportunities:load_opp_stages", kwargs={"company_id": company.id}
     )
+    response = render(
+        request,
+        "opportunity_stage/reload_and_load_url_script.html",
+        {"load_url": str(url)},
+    )
+    response["X-Debug"] = "Modal transition in progress"
+    return response
 
 
 @receiver(company_currency_changed)
@@ -112,21 +105,23 @@ def update_crm_on_currency_change(sender, **kwargs):
         )
 
 
-@receiver(post_save, sender=HorillaUser)
+@receiver(post_save, sender=User)
 def create_opportunity_shortcuts(sender, instance, created, **kwargs):
+    """Create default keyboard shortcuts for opportunities when a user is created."""
     predefined = [
-        {"page": "/opportunities/opportunities-view/", "key": "O", "command": "alt"},
+        {"page": "crm/opportunities/opportunities-view/", "key": "O", "command": "alt"},
     ]
 
     for item in predefined:
-        if not ShortcutKey.objects.filter(user=instance, page=item["page"]).exists():
-            ShortcutKey.objects.create(
-                user=instance,
-                page=item["page"],
-                key=item["key"],
-                command=item["command"],
-                company=instance.company,
-            )
+        ShortcutKey.all_objects.get_or_create(
+            user=instance,
+            key=item["key"],
+            command=item["command"],
+            defaults={
+                "page": item["page"],
+                "company": instance.company,
+            },
+        )
 
 
 @receiver(pre_save, sender=Opportunity)
@@ -160,13 +155,20 @@ def sync_opportunity_owner(sender, instance, created, **kwargs):
     new_owner = instance.owner
     owner_changed = old_owner_id and old_owner_id != new_owner.id
 
+    # Resolve "Opportunity Owner" TeamRole for this company (FK requires instance)
+    owner_role, _ = TeamRole.objects.get_or_create(
+        company=instance.company,
+        team_role_name="Opportunity Owner",
+        defaults={"team_role_name": "Opportunity Owner"},
+    )
+
     # Create/update team member for new owner
-    team_member, tm_created = OpportunityTeamMember.objects.update_or_create(
+    _team_member, _tm_created = OpportunityTeamMember.objects.update_or_create(
         opportunity=instance,
         user=new_owner,
         defaults={
-            "team_role": "Opportunity Owner",
-            "opportunity_access": "Read/Write",
+            "team_role": owner_role,
+            "opportunity_access": "edit",  # Read/Write
             "company": instance.company,
         },
     )
@@ -277,7 +279,7 @@ def create_opportunity_contact_role(sender, instance, created, **kwargs):
             try:
                 contact = Contact.objects.get(pk=contact_id)
 
-                role, created_role = OpportunityContactRole.objects.get_or_create(
+                _role, _created_role = OpportunityContactRole.objects.get_or_create(
                     contact=contact,
                     opportunity=instance,
                     company=company or getattr(instance, "company", None),

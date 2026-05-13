@@ -1,13 +1,21 @@
-"""Forms for managing Opportunity-related models in the CRM application."""
+﻿"""Forms for managing Opportunity-related models in the CRM application."""
 
+# Standard library imports
 import logging
 
+# Django imports
 from django import forms
-from django.db import models
-from django.urls import reverse_lazy
-from django.utils.translation import gettext_lazy as _
 
-from horilla_core.mixins import OwnerQuerysetMixin
+from horilla.auth.models import User
+from horilla.contrib.core.mixins import OwnerQuerysetMixin
+from horilla.contrib.core.models import TeamRole
+from horilla.contrib.generics.forms import HorillaModelForm, HorillaMultiStepForm
+from horilla.core.exceptions import FieldDoesNotExist
+
+# Horilla / first-party imports
+from horilla.db import models
+from horilla.urls import reverse_lazy
+from horilla.utils.translation import gettext_lazy as _
 from horilla_crm.opportunities.models import (
     DefaultOpportunityMember,
     Opportunity,
@@ -15,7 +23,6 @@ from horilla_crm.opportunities.models import (
     OpportunityTeam,
     OpportunityTeamMember,
 )
-from horilla_generics.forms import HorillaModelForm, HorillaMultiStepForm
 
 logger = logging.getLogger(__name__)
 
@@ -66,7 +73,7 @@ class OpportunityFormClass(OwnerQuerysetMixin, HorillaMultiStepForm):
             self.fields["updated_by"].required = False
 
 
-class OpportunitySingleForm(HorillaModelForm):
+class OpportunitySingleForm(OwnerQuerysetMixin, HorillaModelForm):
     """
     Custom form for opportunity to add HTMX attributes
     Inherits from HorillaModelForm to preserve all existing behavior.
@@ -153,11 +160,8 @@ class OpportunityTeamForm(HorillaModelForm):
         condition_field_choices = {}
 
         try:
-            # Get choices for user field (ForeignKey)
-            from .models import HorillaUser  # Import here to avoid circular imports
-
             user_choices = [("", "---------")]
-            users = HorillaUser.objects.all()[:100]  # Limit for performance
+            users = User.objects.all()[:100]  # Limit for performance
             user_choices.extend([(user.pk, str(user)) for user in users])
             condition_field_choices["user"] = user_choices
 
@@ -241,7 +245,7 @@ class OpportunityTeamForm(HorillaModelForm):
                             attrs={
                                 "class": "select2-pagination w-full",
                                 "data-url": reverse_lazy(
-                                    "horilla_generics:model_select2",
+                                    "generics:model_select2",
                                     kwargs={
                                         "app_label": app_label,
                                         "model_name": model_name,
@@ -312,9 +316,9 @@ class OpportunityTeamForm(HorillaModelForm):
             for field_name in self.condition_fields:
                 if field_name in self.fields:
                     value = getattr(first_member, field_name, "")
-                    # Handle ForeignKey fields
-                    if field_name == "user" and value:
-                        value = value.pk if hasattr(value, "pk") else value
+                    # Convert FK instances to PKs so ChoiceField initial matches option values
+                    if hasattr(value, "pk"):
+                        value = value.pk
 
                     self.fields[field_name].initial = value
                     field_key_0 = f"{field_name}_0"
@@ -343,18 +347,24 @@ class OpportunityTeamForm(HorillaModelForm):
                     if value:
                         if field_name == "user":
                             try:
-                                from .models import (  # Import here to avoid circular imports
-                                    HorillaUser,
-                                )
-
-                                value = HorillaUser.objects.get(pk=value)
-                            except (HorillaUser.DoesNotExist, ValueError):
+                                value = User.objects.get(pk=value)
+                            except (User.DoesNotExist, ValueError):
                                 self.add_error(
                                     None, f"Invalid user selected for row {row_id}"
                                 )
                                 valid_row = False
                                 continue
-                        # Validate choices for fields with choices (e.g., team_role, opportunity_access_level)
+                        if field_name == "team_role":
+                            try:
+                                value = TeamRole.objects.get(pk=value)
+                            except (TeamRole.DoesNotExist, ValueError):
+                                self.add_error(
+                                    None,
+                                    f"Invalid team role selected for row {row_id}",
+                                )
+                                valid_row = False
+                                continue
+                        # Validate choices for fields with choices (e.g., opportunity_access_level)
                         model_field = self.condition_model._meta.get_field(field_name)
                         if hasattr(model_field, "choices") and model_field.choices:
                             choice_values = [
@@ -368,9 +378,34 @@ class OpportunityTeamForm(HorillaModelForm):
                                 valid_row = False
                                 continue
                         row_data[field_name] = value
-            if row_data and valid_row:
-                condition_rows.append(row_data)
-
+            if row_data:
+                # Validate mandatory condition fields so we show form errors
+                # instead of defaulting or hitting NOT NULL in the DB
+                missing_mandatory = []
+                for field_name in self.condition_fields:
+                    try:
+                        model_field = self.condition_model._meta.get_field(field_name)
+                    except FieldDoesNotExist:
+                        continue
+                    if model_field.null or model_field.blank:
+                        continue
+                    if not row_data.get(field_name):
+                        label = model_field.verbose_name or field_name
+                        missing_mandatory.append(str(label) if label else field_name)
+                if missing_mandatory:
+                    self.add_error(
+                        None,
+                        _(
+                            "%(fields)s is required for each team member (row %(row_id)s)."
+                        )
+                        % {
+                            "row_id": row_id,
+                            "fields": ", ".join(missing_mandatory),
+                        },
+                    )
+                    valid_row = False
+                if valid_row:
+                    condition_rows.append(row_data)
         return condition_rows
 
     def clean(self):
@@ -402,15 +437,11 @@ class OpportunityTeamMemberForm(HorillaModelForm):
         self.row_id = kwargs.pop("row_id", "0")
         super().__init__(*args, **kwargs)
 
-        for field_name in ["user", "team_role", "opportunity_access_level"]:
-            if field_name in self.fields:
-                self.fields[field_name].required = False
-
     class Meta:
         """Meta options for OpportunityTeamMemberForm."""
 
         model = DefaultOpportunityMember
-        fields = ["team", "user", "team_role", "opportunity_access_level"]
+        fields = ["team"]
 
 
 class OpportunityMemberForm(HorillaModelForm):
@@ -420,15 +451,11 @@ class OpportunityMemberForm(HorillaModelForm):
         self.row_id = kwargs.pop("row_id", "0")
         super().__init__(*args, **kwargs)
 
-        for field_name in ["user", "team_role", "opportunity_access"]:
-            if field_name in self.fields:
-                self.fields[field_name].required = False
-
     class Meta:
-        """Meta options for OpportunityTeamMemberForm."""
+        """Meta options for OpportunityMemberForm."""
 
         model = OpportunityTeamMember
-        fields = ["opportunity", "user", "team_role", "opportunity_access"]
+        fields = ["opportunity"]
 
 
 class AddDefaultTeamForm(forms.Form):
@@ -453,10 +480,21 @@ class AddDefaultTeamForm(forms.Form):
         kwargs.pop("condition_fields", None)
         kwargs.pop("condition_model", None)
         kwargs.pop("condition_field_choices", None)
+        kwargs.pop("condition_related_name", None)
+        kwargs.pop("condition_related_name_candidates", None)
         kwargs.pop("hidden_fields", None)
         kwargs.pop("row_id", None)
         self.request = kwargs.pop("request", None)
         self.opportunity = kwargs.pop("opportunity", None)
+        self.condition_hx_include = kwargs.pop("condition_hx_include", "")
+        self.field_permissions = kwargs.pop("field_permissions", {})
+        self.save_and_new = kwargs.pop("save_and_new", "")
+        self.duplicate_mode = kwargs.pop("duplicate_mode", False)
+        self.row_id = kwargs.pop("row_id", "0")
+        self.instance_obj = kwargs.get(
+            "instance"
+        )  # Store instance for condition methods
+        self.model_name = kwargs.pop("model_name", None)
         super().__init__(*args, **kwargs)
         self.fields["team"].queryset = OpportunityTeam.objects.filter(
             owner=self.request.user

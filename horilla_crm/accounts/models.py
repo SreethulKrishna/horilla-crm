@@ -2,21 +2,24 @@
 Models for managing accounts in the CRM system, including account details,
 """
 
-from django.apps import apps
+# Third-party imports (Django)
 from django.conf import settings
-from django.db import models
 from django.db.models.signals import pre_save
 from django.dispatch import receiver
-from django.urls import reverse_lazy
-from django.utils.translation import gettext_lazy as _
 
-from horilla.registry.feature import feature_enabled
-from horilla_core.models import HorillaCoreModel
+from horilla.apps import apps
+from horilla.contrib.core.models import HorillaCoreModel
+from horilla.contrib.utils.middlewares import _thread_local
+
+# First-party / Horilla imports
+from horilla.db import models
+from horilla.urls import reverse_lazy
+from horilla.utils.translation import gettext_lazy as _
+
+# First-party / Horilla apps
 from horilla_crm.leads.utils import compute_score
-from horilla_utils.middlewares import _thread_local
 
 
-@feature_enabled(all=True)
 class Account(HorillaCoreModel):
     """Model representing a business account."""
 
@@ -295,7 +298,7 @@ class PartnerAccountRelationship(HorillaCoreModel):
         verbose_name=_("Account"),
     )
     role = models.ForeignKey(
-        "horilla_core.PartnerRole",
+        "core.PartnerRole",
         on_delete=models.SET_NULL,
         null=True,
         blank=True,

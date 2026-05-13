@@ -1,10 +1,11 @@
 """Filters for Lead and LeadStatus models."""
 
+from horilla.contrib.core.mixins import OwnerFiltersetMixin
+from horilla.contrib.generics.filters import HorillaFilterSet
 from horilla_crm.leads.models import Lead, LeadStatus, ScoringRule
-from horilla_generics.filters import HorillaFilterSet
 
 
-class LeadFilter(HorillaFilterSet):
+class LeadFilter(OwnerFiltersetMixin, HorillaFilterSet):
     """Lead Filter"""
 
     class Meta:
@@ -12,7 +13,7 @@ class LeadFilter(HorillaFilterSet):
 
         model = Lead
         fields = "__all__"
-        exclude = ["additional_info"]
+        exclude = ["additional_info", "is_convert", "message_id"]
         search_fields = ["first_name", "email", "title"]
 
 
@@ -29,7 +30,11 @@ class LeadStatusFilter(HorillaFilterSet):
 
 
 class ScoringRuleFilter(HorillaFilterSet):
+    """Filter set for scoring rules."""
+
     class Meta:
+        """Meta options for ScoringRuleFilter."""
+
         model = ScoringRule
         fields = "__all__"
         exclude = ["additional_info"]

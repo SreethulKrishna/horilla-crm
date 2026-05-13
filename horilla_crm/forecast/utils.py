@@ -14,9 +14,13 @@ Features:
 - Caches condition queries for efficiency.
 """
 
-from django.db.models import Q, Sum
+from horilla.auth.models import User
+from horilla.contrib.core.models import FiscalYearInstance, Period
 
-from horilla_core.models import FiscalYearInstance, HorillaUser, Period
+# First party / Horilla imports
+from horilla.db.models import Q, Sum
+
+# First-party / Horilla apps
 from horilla_crm.forecast.models import Forecast, ForecastTarget, ForecastType
 from horilla_crm.opportunities.models import Opportunity
 
@@ -47,7 +51,7 @@ class ForecastCalculator:
         user_ids = list(set(combo[0] for combo in missing_combinations))
         period_ids = list(set(combo[1] for combo in missing_combinations))
 
-        users_map = {u.id: u for u in HorillaUser.objects.filter(id__in=user_ids)}
+        users_map = {u.id: u for u in User.objects.filter(id__in=user_ids)}
         periods_map = {
             p.id: p
             for p in Period.objects.filter(id__in=period_ids).select_related("quarter")
@@ -248,12 +252,11 @@ class ForecastCalculator:
             return self._calculate_quantity_values_from_data(
                 opportunities, forecast_type
             )
-        elif forecast_type.is_revenue_expected_based:
+        if forecast_type.is_revenue_expected_based:
             return self._calculate_expected_amount_values_from_data(
                 opportunities, forecast_type
             )
-        else:
-            return self._calculate_amount_values_from_data(opportunities, forecast_type)
+        return self._calculate_amount_values_from_data(opportunities, forecast_type)
 
     def _calculate_quantity_values_from_data(self, opportunities, forecast_type):
         """Calculate quantity values from opportunity data"""
@@ -371,7 +374,7 @@ class ForecastCalculator:
 
     def create_or_update_period_forecast(self, user, forecast_type, period):
         """Create or update forecast for a specific period automatically"""
-        forecast, created = Forecast.objects.get_or_create(
+        forecast, _created = Forecast.objects.get_or_create(
             company=getattr(user, "company", None),
             owner=user,
             forecast_type=forecast_type,
@@ -398,6 +401,15 @@ class ForecastCalculator:
                 forecast.target_quantity = self.get_target_for_period(
                     user, period, "quantity"
                 )
+
+            update_fields = [
+                "pipeline_quantity",
+                "best_case_quantity",
+                "commit_quantity",
+                "closed_quantity",
+                "actual_quantity",
+                "target_quantity",
+            ]
         else:
             forecast.pipeline_amount = calculated_data["pipeline"]
             forecast.best_case_amount = calculated_data["best_case"]
@@ -410,7 +422,16 @@ class ForecastCalculator:
                     user, period, "amount"
                 )
 
-        forecast.save()
+            update_fields = [
+                "pipeline_amount",
+                "best_case_amount",
+                "commit_amount",
+                "closed_amount",
+                "actual_amount",
+                "target_amount",
+            ]
+
+        forecast.save(update_fields=update_fields)
         return forecast
 
     def calculate_forecast_values(self, user, period, forecast_type):
@@ -427,10 +448,9 @@ class ForecastCalculator:
 
         if forecast_type.is_quantity_based:
             return self._calculate_quantity_values(opportunities, forecast_type)
-        elif forecast_type.is_revenue_expected_based:
+        if forecast_type.is_revenue_expected_based:
             return self._calculate_expected_amount_values(opportunities, forecast_type)
-        else:
-            return self._calculate_amount_values(opportunities, forecast_type)
+        return self._calculate_amount_values(opportunities, forecast_type)
 
     def build_conditions_query(self, forecast_type):
         """Build Django Q object from horilla_crm.forecastCondition records"""
@@ -510,12 +530,11 @@ class ForecastCalculator:
 
         if operator in ["not_equals", "not_contains"]:
             return ~Q(**operator_map[operator.replace("not_", "")])
-        elif operator == "is_empty":
+        if operator == "is_empty":
             return Q(**{f"{field}__isnull": True}) | Q(**{field: ""})
-        elif operator == "is_not_empty":
+        if operator == "is_not_empty":
             return ~(Q(**{f"{field}__isnull": True}) | Q(**{field: ""}))
-        else:
-            return Q(**operator_map.get(operator, {field: value}))
+        return Q(**operator_map.get(operator, {field: value}))
 
     def convert_value(self, value, _field):
         """Convert string value to appropriate type based on field"""
@@ -664,13 +683,12 @@ class ForecastCalculator:
 
         if target_type == "quantity":
             return getattr(target, "quantity_target", 0) if target else 0
-        else:
-            return target.target_amount if target else 0
+        return target.target_amount if target else 0
 
     def bulk_generate_forecasts(self, users=None, periods=None):
         """Bulk generate forecasts for multiple users and periods"""
         if not users:
-            users = HorillaUser.objects.filter(is_active=True)
+            users = User.objects.filter(is_active=True)
 
         if not periods:
             periods = Period.objects.filter(quarter__fiscal_year=self.fiscal_year)

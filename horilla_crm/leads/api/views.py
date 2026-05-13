@@ -1,19 +1,21 @@
 """
 API views for horilla_crm.leads models
 
-This module mirrors horilla_core API patterns including search, filtering,
+This module mirrors core API patterns including search, filtering,
 bulk update, bulk delete, permissions, and documentation.
 """
 
+# Third-party imports
 from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import permissions, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
 
-from horilla_core.api.docs import BULK_DELETE_DOCS, BULK_UPDATE_DOCS, SEARCH_FILTER_DOCS
-from horilla_core.api.mixins import BulkOperationsMixin, SearchFilterMixin
-from horilla_core.api.permissions import IsCompanyMember, IsOwnerOrAdmin
+# First-party / Horilla imports
+from horilla.contrib.core.api.docs import BULK_DELETE_DOCS, BULK_UPDATE_DOCS
+from horilla.contrib.core.api.mixins import BulkOperationsMixin, SearchFilterMixin
+from horilla.contrib.core.api.permissions import IsCompanyMember
 from horilla_crm.leads.api.docs import (
     LEAD_BY_OWNER_DOCS,
     LEAD_BY_SOURCE_DOCS,
@@ -30,13 +32,14 @@ from horilla_crm.leads.api.docs import (
     LEAD_STATUS_REORDER_DOCS,
 )
 from horilla_crm.leads.api.serializers import (
+    LeadSerializer,
     LeadStatusSerializer,
     ScoringCriterionSerializer,
     ScoringRuleSerializer,
 )
 from horilla_crm.leads.models import Lead, LeadStatus, ScoringCriterion, ScoringRule
 
-# Define common Swagger parameters and bodies consistent with horilla_core
+# Define common Swagger parameters and bodies consistent with core
 search_param = openapi.Parameter(
     "search",
     openapi.IN_QUERY,
@@ -71,7 +74,15 @@ class LeadViewSet(SearchFilterMixin, BulkOperationsMixin, viewsets.ModelViewSet)
     """ViewSet for Lead model"""
 
     queryset = Lead.objects.all()
+    serializer_class = LeadSerializer
     permission_classes = [permissions.IsAuthenticated, IsCompanyMember]
+
+    def get_serializer_class(self):
+        """Return the serializer class for the view"""
+        # Handle Swagger schema generation
+        if getattr(self, "swagger_fake_view", False):
+            return LeadSerializer
+        return super().get_serializer_class()
 
     # Search across common lead fields
     search_fields = [

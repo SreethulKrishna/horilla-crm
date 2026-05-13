@@ -5,25 +5,26 @@ This module defines models related to forecasts, including forecast types,
 conditions, main forecasts, targets, individual user targets, and historical tracking.
 """
 
+# Third party imports (Django)
 from django.conf import settings
-from django.db import models
-from django.urls import reverse_lazy
-from django.utils.translation import gettext_lazy as _
 
-from horilla.registry.feature import feature_enabled
-from horilla.registry.permission_registry import permission_exempt_model
-from horilla.utils.choices import OPERATOR_CHOICES
-from horilla_core.models import (
+from horilla.contrib.core.models import (
     FiscalYearInstance,
     HorillaCoreModel,
     Period,
     Quarter,
     Role,
 )
+
+# First party / Horilla imports
+from horilla.db import models
+from horilla.registry.permission_registry import permission_exempt_model
+from horilla.urls import reverse_lazy
+from horilla.utils.choices import OPERATOR_CHOICES
+from horilla.utils.translation import gettext_lazy as _
 from horilla_crm.opportunities.models import Opportunity
 
 
-@feature_enabled(import_data=True, export_data=True)
 class ForecastType(HorillaCoreModel):
     """
     Defines different types of forecasts (e.g., Revenue, Quantity, etc.)
@@ -418,19 +419,7 @@ class Forecast(HorillaCoreModel):
             return f"{self.closed_quantity} deals"
         return f"{self.closed_amount}"
 
-    def calculate_amounts_from_opportunities(self):
-        """
-        Calculate forecast amounts/quantities based on opportunities in the period.
-        Import inside to avoid circular import.
-        """
-        from horilla_crm.forecast.utils import ForecastCalculator
-
-        calculator = ForecastCalculator()
-
     def save(self, *args, **kwargs):
-        if not self.pk:
-            self.calculate_amounts_from_opportunities()
-
         super().save(*args, **kwargs)
 
 

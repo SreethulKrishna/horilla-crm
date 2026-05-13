@@ -3,26 +3,32 @@ Signal handlers for leads in Horilla CRM.
 Handles automatic updates when company-related events occur, e.g., currency change.
 """
 
+# Standard library imports
 import logging
 
-from django.apps import apps
-from django.core.exceptions import FieldDoesNotExist
+# Third-party imports (Django)
 from django.db import transaction
-from django.db.models import Case, F, IntegerField, Q, When
-from django.db.models.signals import post_save, pre_delete
+from django.db.models.signals import post_migrate, post_save, pre_delete, pre_save
 from django.dispatch import Signal, receiver
-from django.http import HttpResponse
-from django.urls import reverse_lazy
 
-from horilla_core.models import HorillaUser
-from horilla_core.signals import company_created, company_currency_changed
+# First-party / Horilla imports
+from horilla.apps import apps
+from horilla.auth.models import User
+
+# First-party / Horilla apps
+from horilla.contrib.core.signals import company_created, company_currency_changed
+from horilla.contrib.keys.models import ShortcutKey
+from horilla.core.exceptions import FieldDoesNotExist
+from horilla.db.models import Case, F, IntegerField, Q, When
+from horilla.shortcuts import render
+from horilla.urls import reverse_lazy
 from horilla_crm.leads.models import (
     Lead,
     ScoringCondition,
     ScoringCriterion,
     ScoringRule,
 )
-from horilla_keys.models import ShortcutKey
+from horilla_crm.leads.utils import compute_score
 
 logger = logging.getLogger(__name__)
 
@@ -34,26 +40,14 @@ lead_stage_created = Signal()
 def handle_company_created(sender, instance, request, view, is_new, **kwargs):
     """Inject lead stages loading after company creation"""
     if is_new:  # Only for new companies
-        return HttpResponse(
-            """
-            <script>
-                closeModal();
-                $('#reloadButton').click();
-                openContentModal();
-                var div = document.createElement('div');
-                div.setAttribute('hx-get', '%s');
-                div.setAttribute('hx-target', '#contentModalBox');
-                div.setAttribute('hx-trigger', 'load');
-                div.setAttribute('hx-swap', 'innerHTML');
-                document.body.appendChild(div);
-                htmx.process(div);
-            </script>
-            """
-            % reverse_lazy(
-                "leads:load_lead_stages", kwargs={"company_id": instance.id}
-            ),
-            headers={"X-Debug": "Modal transition in progress"},
+        url = reverse_lazy("leads:load_lead_stages", kwargs={"company_id": instance.id})
+        response = render(
+            request,
+            "lead_status/reload_and_load_url_script.html",
+            {"load_url": str(url)},
         )
+        response["X-Debug"] = "Modal transition in progress"
+        return response
     return None
 
 
@@ -81,24 +75,27 @@ def update_crm_on_currency_change(sender, **kwargs):
         Lead.objects.bulk_update(leads_to_update, ["annual_revenue"], batch_size=1000)
 
 
-@receiver(post_save, sender=HorillaUser)
+@receiver(post_save, sender=User)
 def create_leads_shortcuts(sender, instance, created, **kwargs):
+    """Create default keyboard shortcuts for leads when a user is created."""
     predefined = [
-        {"page": "/leads/leads-view/", "key": "E", "command": "alt"},
+        {"page": "crm/leads/leads-view/", "key": "E", "command": "alt"},
     ]
 
     for item in predefined:
-        if not ShortcutKey.objects.filter(user=instance, page=item["page"]).exists():
-            ShortcutKey.objects.create(
-                user=instance,
-                page=item["page"],
-                key=item["key"],
-                command=item["command"],
-                company=instance.company,
-            )
+        ShortcutKey.all_objects.get_or_create(
+            user=instance,
+            key=item["key"],
+            command=item["command"],
+            defaults={
+                "page": item["page"],
+                "company": instance.company,
+            },
+        )
 
 
 def get_score_field(model):
+    """Get the score field name for a given model."""
     score_fields = {
         "lead": "lead_score",
         "opportunity": "opportunity_score",
@@ -186,14 +183,15 @@ def build_query_from_conditions(criterion, Model):
             elif operator == "is_not_empty":
                 condition_query = ~Q(**{field: None}) & ~Q(**{f"{field}__exact": ""})
             else:
-                logger.warning(f"Unsupported operator {operator} for field {field}")
                 condition_query = Q(pk__in=[])
             if logical_operator == "and":
                 query &= condition_query
             else:
                 query |= condition_query
         except FieldDoesNotExist:
-            logger.warning(f"Field {field} does not exist on {Model._meta.model_name}")
+            logger.warning(
+                "Field %s does not exist on %s", field, Model._meta.model_name
+            )
             query &= Q(pk__in=[])
 
     return query
@@ -217,11 +215,16 @@ def update_all_scores_for_module(module):
             try:
                 Model.objects.update(**{score_field: 0})
                 logger.info(
-                    f"Reset {score_field} to 0 for all {Model._meta.model_name} instances"
+                    "Reset %s to 0 for all %s instances",
+                    score_field,
+                    Model._meta.model_name,
                 )
             except Exception as e:
                 logger.error(
-                    f"Error resetting {score_field} for {Model._meta.model_name}: {e}"
+                    "Error resetting %s for %s: %s",
+                    score_field,
+                    Model._meta.model_name,
+                    e,
                 )
                 raise
 
@@ -250,11 +253,18 @@ def update_all_scores_for_module(module):
                             }
                         )
                         logger.info(
-                            f"Updated {score_field} for {Model._meta.model_name} instances matching criterion {criterion.id}"
+                            "Updated %s for %s instances matching criterion %s",
+                            score_field,
+                            Model._meta.model_name,
+                            criterion.id,
                         )
                     except Exception as e:
                         logger.error(
-                            f"Error updating {score_field} for {Model._meta.model_name} with criterion {criterion.id}: {e}"
+                            "Error updating %s for %s with criterion %s: %s",
+                            score_field,
+                            Model._meta.model_name,
+                            criterion.id,
+                            e,
                         )
                         raise
 
@@ -287,3 +297,37 @@ def handle_condition_change(sender, instance, **kwargs):
     Rebuilds and applies scoring rules to update scores for affected module instances.
     """
     update_all_scores_for_module(instance.criterion.rule.module)
+
+
+_CRM_SHORTKEY_URL_MIGRATIONS = {
+    "/leads/leads-view/": "/crm/leads/leads-view/",
+    "/accounts/accounts-view/": "/crm/accounts/accounts-view/",
+    "/contacts/contacts-view/": "/crm/contacts/contacts-view/",
+    "/opportunities/opportunities-view/": "/crm/opportunities/opportunities-view/",
+    "/campaigns/campaign-view/": "/crm/campaigns/campaign-view/",
+    "/forecast/forecast-view/": "/crm/forecast/forecast-view/",
+}
+
+
+@receiver(post_migrate, dispatch_uid="migrate_crm_shortkey_urls")
+def migrate_crm_shortkey_urls(sender, **kwargs):
+    """Prefix existing CRM shortkey URLs with crm/ after the URL restructure."""
+    if sender.name != "horilla_crm.leads":
+        return
+    try:
+        for old_url, new_url in _CRM_SHORTKEY_URL_MIGRATIONS.items():
+            updated = ShortcutKey.all_objects.filter(page=old_url).update(page=new_url)
+            print(f"Migrated {updated} shortkey(s): '{old_url}' → '{new_url}'")
+            if updated:
+                logger.info(
+                    "Migrated %d shortkey(s): '%s' → '%s'", updated, old_url, new_url
+                )
+    except Exception as exc:
+        logger.warning("Could not migrate CRM shortkey URLs: %s", exc)
+
+
+@receiver(pre_save, sender=Lead)
+def update_lead_score(sender, instance, **kwargs):
+    """Signal to update lead score before saving a Lead instance."""
+
+    instance.lead_score = compute_score(instance)

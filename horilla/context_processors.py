@@ -5,66 +5,18 @@ Provides sidebar, company, language, recently viewed items, notifications,
 and menu context for templates.
 """
 
-import json
-from importlib import import_module
-
 from django.conf import settings
 from django.utils.translation import get_language
 
 from horilla import __version__ as horilla_version
+from horilla.contrib.core.models import Company, RecentlyViewed
+from horilla.contrib.notifications.models import Notification
 from horilla.menu.floating_menu import get_floating_menu
 from horilla.menu.main_section_menu import get_main_section_menu
 from horilla.menu.my_settings_menu import get_my_settings_menu
 from horilla.menu.settings_menu import get_settings_menu
 from horilla.menu.sub_section_menu import get_sub_section_menu
-from horilla_core.models import Company, RecentlyViewed
-from horilla_notifications.models import Notification
-
-
-def get_module_version_info(module_name):
-    """Return module version info as a dict: {name, version, description}."""
-    try:
-        mod = import_module(f"{module_name}.__version__")
-
-        return {
-            "name": getattr(mod, "__module_name__", module_name),
-            "version": getattr(mod, "__version__", "Unknown"),
-            "description": getattr(mod, "__description__", ""),
-            "icon": getattr(mod, "__icon__", ""),
-        }
-
-    except ModuleNotFoundError:
-        return None
-
-
-def collect_all_versions(request):
-    """Collect version info for all top-level Horilla modules."""
-
-    versions = [
-        {
-            "name": horilla_version.__module_name__,
-            "version": horilla_version.__version__,
-            "description": horilla_version.__description__,
-            "icon": getattr(horilla_version, "__icon__", ""),
-        }
-    ]
-
-    seen = set()
-
-    for app in settings.INSTALLED_APPS:
-        top_level = app.split(".")[0]
-
-        if top_level not in seen:
-            info = get_module_version_info(top_level)
-
-            if info:
-                versions.append(info)
-
-            seen.add(top_level)
-
-    return {
-        "HORILLA_VERSIONS": versions,
-    }
+from horilla.utils.branding import load_branding
 
 
 def company_list(request):
@@ -145,7 +97,7 @@ def currency_context(request):
     if not request.user.is_authenticated:
         return {}
 
-    from horilla_core.models import MultipleCurrency
+    from horilla.contrib.core.models import MultipleCurrency
 
     user_currency = MultipleCurrency.get_user_currency(request.user)
     default_currency = None
@@ -157,3 +109,12 @@ def currency_context(request):
         "user_currency": user_currency,
         "default_currency": default_currency,
     }
+
+
+def branding(request):
+    """
+    Django context processor function that retrun
+    dictionary containing branding configuration values such as
+    TITLE, LOGIN_WELCOME_LINE, LOGO_PATH, etc.
+    """
+    return load_branding()

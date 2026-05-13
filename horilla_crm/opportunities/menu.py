@@ -3,15 +3,16 @@ This module registers Floating, Settings, My Settings, and Main Section menus
 for the Horilla CRM Opportunities app
 """
 
-from django.urls import reverse_lazy
-from django.utils.translation import gettext_lazy as _
-
 from horilla.menu import (
     floating_menu,
     my_settings_menu,
     settings_menu,
     sub_section_menu,
 )
+
+# First-party / Horilla imports
+from horilla.urls import reverse_lazy
+from horilla.utils.translation import gettext_lazy as _
 from horilla_crm.opportunities.models import (
     Opportunity,
     OpportunitySettings,
@@ -114,5 +115,14 @@ class OpportunitiesSettings:
             "hx-select-oob": "#settings-sidebar",
             "perm": "opportunities.view_opportunitysplittype",
             "condition": staticmethod(OpportunitySettings.is_team_selling_enabled),
+        },
+        {
+            "label": _("Big Deal Alerts"),
+            "url": reverse_lazy("opportunities:big_deal_alert_view"),
+            "hx-target": "#settings-content",
+            "hx-push-url": "true",
+            "hx-select": "#big-deal-alert-view",
+            "hx-select-oob": "#settings-sidebar",
+            "perm": "automations.view_horillaautomation",
         },
     ]

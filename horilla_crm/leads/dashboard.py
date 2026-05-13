@@ -1,15 +1,22 @@
-from django.db.models import Count
+"""Dashboard utilities for leads module."""
+
+# Third-party imports (Django)
 from django.utils.http import urlencode
 
-from horilla_dashboard.utils import DefaultDashboardGenerator
-from horilla_utils.methods import get_section_info_for_model
+from horilla.contrib.dashboard.utils import DefaultDashboardGenerator
+from horilla.contrib.utils.methods import get_section_info_for_model
 
+# First-party / Horilla imports
+from horilla.db.models import Count
+from horilla.utils.choices import TABLE_FALLBACK_FIELD_TYPES
+
+# Local application imports
 from .models import Lead
 
 
-def create_lead_charts(self, queryset, model_info):
+def create_lead_source_charts(self, queryset, model_info):
     """
-    Lead-specific charts moved out of horilla_dashboard.
+    Lead-specific charts moved out of horilla.contrib.dashboard.
     """
     try:
         # ---- lead source chart ----
@@ -105,6 +112,79 @@ def create_lead_charts(self, queryset, model_info):
     return None
 
 
+def create_lead_charts_by_stage(self, queryset, model_info):
+    """Chart: lead counts grouped by pipeline stage (second dashboard chart slot)."""
+    try:
+        if not hasattr(queryset.model, "lead_status"):
+            return None
+
+        data = (
+            queryset.values("lead_status_id", "lead_status__name")
+            .annotate(count=Count("id"))
+            .order_by("-count")
+        )
+
+        if not data.exists():
+            return None
+
+        labels = [row["lead_status__name"] or "No stage" for row in data]
+        values = [row["count"] for row in data]
+
+        section = get_section_info_for_model(queryset.model)
+        urls = []
+        for row in data:
+            pk = row["lead_status_id"]
+            query = urlencode(
+                {
+                    "section": section["section"],
+                    "apply_filter": "true",
+                    "field": "lead_status",
+                    "operator": "exact",
+                    "value": str(pk) if pk is not None else "",
+                }
+            )
+            urls.append(f"{section['url']}?{query}")
+
+        return {
+            "title": "Leads by Stage",
+            "type": "column",
+            "data": {
+                "labels": labels,
+                "data": values,
+                "urls": urls,
+                "labelField": "Lead Stage",
+            },
+        }
+    except Exception as e:
+        print("Lead stage chart error:", e)
+
+    return None
+
+
+def lead_kpi_cards(generator, model_info):
+    """
+    KPI values come from any queryset logic: filters, aggregates, annotations, etc.
+    Display style (integer vs decimals vs text) is inferred from each ``value``;
+    set ``type`` only if you need to override formatting.
+    """
+    model_class = model_info["model"]
+    qs = generator.get_queryset(model_class)
+    section_info = get_section_info_for_model(model_class)
+    open_qs = qs.filter(is_convert=False) if hasattr(model_class, "is_convert") else qs
+    open_count = open_qs.count()
+
+    return [
+        {
+            "title": "Total Leads",
+            "value": open_count,
+            "icon": "fa-layer-group",
+            "color": "blue",
+            "url": section_info["url"],
+            "section": section_info["section"],
+        },
+    ]
+
+
 def lead_table_fields(model_class):
     """Return list of {name, verbose_name} for lead table columns."""
 
@@ -125,11 +205,10 @@ def lead_table_fields(model_class):
         for f in model_class._meta.fields:
             if len(fields) >= 4:
                 break
-            if f.name not in [x["name"] for x in fields] and f.get_internal_type() in [
-                "CharField",
-                "TextField",
-                "EmailField",
-            ]:
+            if (
+                f.name not in [x["name"] for x in fields]
+                and f.get_internal_type() in TABLE_FALLBACK_FIELD_TYPES
+            ):
                 fields.append(
                     {
                         "name": f.name,
@@ -140,21 +219,8 @@ def lead_table_fields(model_class):
     return fields
 
 
-def lead_table_func(generator, model_info):
-    filter_kwargs = (
-        {"is_convert": True} if hasattr(model_info["model"], "is_convert") else {}
-    )
-    return generator.build_table_context(
-        model_info=model_info,
-        title="Won Leads",
-        filter_kwargs=filter_kwargs,
-        no_record_msg="No won leads found.",
-        view_id="leads_dashboard_list",
-        table_fields=lead_table_fields(model_info["model"]),
-    )
-
-
-def lead_table_func(generator, model_info):
+def lead_convert_table_func(generator, model_info):
+    """Generate table context for won leads."""
     filter_kwargs = (
         {"is_convert": True} if hasattr(model_info["model"], "is_convert") else {}
     )
@@ -163,8 +229,25 @@ def lead_table_func(generator, model_info):
         model_info=model_info,
         title="Won Leads",
         filter_kwargs=filter_kwargs,
+        no_found_img="assets/img/not-found-list.svg",
         no_record_msg="No won leads found.",
         view_id="leads_dashboard_list",
+    )
+
+
+def lead_open_pipeline_table_func(generator, model_info):
+    """Generate table context for leads not yet converted (pipeline)."""
+    filter_kwargs = (
+        {"is_convert": False} if hasattr(model_info["model"], "is_convert") else {}
+    )
+
+    return generator.build_table_context(
+        model_info=model_info,
+        title="Open Leads (pipeline)",
+        filter_kwargs=filter_kwargs,
+        no_found_img="assets/img/not-found-list.svg",
+        no_record_msg="No open leads found.",
+        view_id="leads_dashboard_open_list",
     )
 
 
@@ -172,10 +255,9 @@ DefaultDashboardGenerator.extra_models.append(
     {
         "model": Lead,
         "name": "Leads",
-        "icon": "fa-user-plus",
-        "color": "blue",
-        "chart_func": create_lead_charts,
-        "table_func": lead_table_func,
+        "kpi_func": lead_kpi_cards,
+        "chart_func": [create_lead_source_charts, create_lead_charts_by_stage],
+        "table_func": [lead_convert_table_func, lead_open_pipeline_table_func],
         "table_fields_func": lead_table_fields,
     }
 )

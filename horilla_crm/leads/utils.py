@@ -1,4 +1,7 @@
-from horilla_crm.leads.models import ScoringRule
+"""Utility functions for leads module."""
+
+# Local imports
+from .models import ScoringRule
 
 
 def compute_score(instance):

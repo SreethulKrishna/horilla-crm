@@ -4,18 +4,22 @@ Includes campaign details, ownership, and member (lead/contact) associations.
 Provides URL helpers and validation for campaign-related operations.
 """
 
+# Standard library imports
 import logging
 
-from django.apps import apps
 from django.conf import settings
-from django.db import models
-from django.forms import ValidationError
-from django.urls import reverse_lazy
-from django.utils.translation import gettext_lazy as _
 
-from horilla.registry.feature import feature_enabled
-from horilla_core.models import HorillaCoreModel, MultipleCurrency
-from horilla_utils.middlewares import _thread_local
+# Third-party imports (Django)
+from django.forms import ValidationError
+
+from horilla.apps import apps
+from horilla.contrib.core.models import HorillaCoreModel
+from horilla.contrib.utils.middlewares import _thread_local
+
+# First-party / Horilla imports
+from horilla.db import models
+from horilla.urls import reverse_lazy
+from horilla.utils.translation import gettext_lazy as _
 
 logger = logging.getLogger(__name__)
 
@@ -111,6 +115,7 @@ class CampaignMember(HorillaCoreModel):
         model_instance = self.campaign
         if model_instance and hasattr(model_instance, "get_detail_view_url"):
             return model_instance.get_detail_view_url()
+        return None
 
     def get_edit_url(self):
         """
@@ -231,7 +236,6 @@ class CampaignMember(HorillaCoreModel):
                 self.campaign.save(update_fields=["responses_in_campaign"])
 
 
-@feature_enabled(all=True)
 class Campaign(HorillaCoreModel):
     """
     Model representing a marketing campaign.
@@ -250,6 +254,9 @@ class Campaign(HorillaCoreModel):
         ("event", _("Event")),
         ("social_media", _("Social Media")),
         ("other", _("Other")),
+        ("webinar", _("Webinar")),
+        ("referral", _("Referral")),
+        ("advertisement", _("Advertisement")),
     ]
 
     campaign_name = models.CharField(max_length=255, verbose_name=_("Campaign Name"))
@@ -391,6 +398,15 @@ class Campaign(HorillaCoreModel):
 
         return reverse_lazy("campaigns:campaign_detail_view", kwargs={"pk": self.pk})
 
+    def get_detail_url(self):
+        return self.get_detail_view_url()
+
+    def get_duplicate_url(self):
+        """
+        This method to get edit url
+        """
+        return reverse_lazy("campaigns:campaign_single_edit", kwargs={"pk": self.pk})
+
     def get_specific_member_edit_url(self, object_model=None, object_id=None):
         """
         Returns the edit URL for the CampaignMember linked to the given object_model and object_id.
@@ -464,7 +480,7 @@ class Campaign(HorillaCoreModel):
         Recalculate all campaign metrics and update the fields.
         Useful for migrations or manual corrections.
         """
-        from django.db.models import Sum
+        from horilla.db.models import Sum
 
         # Leads and converted leads
         self.leads_in_campaign = self.members.filter(member_type="lead").count()
