@@ -1,26 +1,26 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Horilla CRM — Open Source Django CRM Platform</title>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Horilla CRM — Open Source Django CRM Platform</title>
 
-  <meta name="description" content="Horilla CRM is a free and open-source Django CRM platform for enterprise sales management, lead tracking, campaigns, analytics, and customer engagement.">
-  <meta name="keywords" content="Horilla CRM, Django CRM, Open Source CRM, Python CRM, Sales CRM, Lead Management, CRM Software">
-  <meta name="author" content="Horilla">
-  <meta name="robots" content="index, follow">
+    <meta name="description" content="Horilla CRM is a free and open-source Django CRM platform for enterprise sales management, lead tracking, campaigns, analytics, and customer engagement." />
+    <meta name="keywords" content="Horilla CRM, Django CRM, Open Source CRM, Python CRM, Sales CRM, Lead Management, CRM Software" />
+    <meta name="author" content="Horilla" />
+    <meta name="robots" content="index, follow" />
 
-  <meta property="og:type" content="website">
-  <meta property="og:title" content="Horilla CRM — Open Source Django CRM">
-  <meta property="og:description" content="Enterprise CRM platform built with Django, HTMX, PostgreSQL, and WebSockets.">
-  <meta property="og:url" content="https://crm.demo.horilla.com/">
-  <meta property="og:site_name" content="Horilla CRM">
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="Horilla CRM — Open Source Django CRM" />
+    <meta property="og:description" content="Enterprise CRM platform built with Django, HTMX, PostgreSQL, and WebSockets." />
+    <meta property="og:url" content="https://crm.demo.horilla.com/" />
+    <meta property="og:site_name" content="Horilla CRM" />
 
-  <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="Horilla CRM — Open Source Django CRM">
-  <meta name="twitter:description" content="Free and open-source CRM platform for modern businesses.">
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Horilla CRM — Open Source Django CRM" />
+    <meta name="twitter:description" content="Free and open-source CRM platform for modern businesses." />
 
-  <script type="application/ld+json">
+    <script type="application/ld+json">
   {
     "@context": "https://schema.org",
     "@type": "SoftwareApplication",
@@ -40,7 +40,7 @@
   }
   </script>
 
-  <style>
+    <style>
     * {
       margin: 0;
       padding: 0;
@@ -69,6 +69,11 @@
       width: 78px;
       height: 78px;
       margin-bottom: 24px;
+      border-radius: 18px;
+      background: #111827;
+      padding: 10px;
+      border: 1px solid #1e293b;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.25);
     }
 
     .badge {
@@ -236,16 +241,6 @@
       line-height: 1.8;
     }
 
-    code {
-      font-family: monospace;
-    }
-
-    .kw  { color: #a78bfa; }
-    .fn  { color: #60a5fa; }
-    .st  { color: #34d399; }
-    .cm  { color: #64748b; font-style: italic; }
-    .num { color: #fbbf24; }
-
     .link-grid {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
@@ -333,306 +328,208 @@
       }
     }
   </style>
-</head>
+  </head>
 
-<body>
+  <body>
+    <div class="container">
+      <!-- Hero -->
+      <section class="hero">
+        <img src="https://www.horilla.com/wp-content/themes/horilla-wp-theme-main/assets/images/brand/horilla-logo-icon.ico" alt="Horilla CRM Logo" class="logo" />
 
-  <div class="container">
+        <div class="badge">Open Source Enterprise CRM</div>
 
-    <!-- Hero -->
-    <section class="hero">
+        <h1>
+          Horilla CRM
+          <span class="highlight">Built for Modern Businesses</span>
+        </h1>
 
-      <img src="static/favicon.ico" alt="Horilla CRM Logo" class="logo">
+        <p class="subtitle">
+          Free and open-source CRM platform powered by
+          <strong>Django</strong>, <strong>HTMX</strong>, and
+          <strong>PostgreSQL</strong> for lead management, sales pipelines, customer engagement, campaigns, analytics, and workflow automation.
+        </p>
 
-      <div class="badge">
-        Open Source Enterprise CRM
-      </div>
+        <div class="buttons">
+          <a href="https://github.com/horilla-opensource/horilla-crm" class="btn btn-primary">GitHub Repository</a>
 
-      <h1>
-        Horilla CRM
-        <span class="highlight">Built for Modern Businesses</span>
-      </h1>
-
-      <p class="subtitle">
-        Free and open-source CRM platform powered by
-        <strong>Django</strong>, <strong>HTMX</strong>, and
-        <strong>PostgreSQL</strong> for lead management,
-        sales pipelines, customer engagement, campaigns,
-        analytics, and workflow automation.
-      </p>
-
-      <div class="buttons">
-        <a href="https://github.com/horilla-opensource/horilla-crm"
-           class="btn btn-primary">
-          GitHub Repository
-        </a>
-
-        <a href="https://crm.demo.horilla.com/"
-           class="btn btn-secondary">
-          Live Demo
-        </a>
-      </div>
-
-    </section>
-
-    <!-- Features -->
-    <section class="section">
-
-      <h2>Core Features</h2>
-
-      <p class="section-desc">
-        Enterprise-grade CRM modules designed for customer
-        management, sales growth, marketing campaigns,
-        analytics, and real-time collaboration.
-      </p>
-
-      <div class="cards">
-
-        <div class="card">
-          <h3>Lead & Opportunity Management</h3>
-          <p>
-            Track leads, manage opportunities,
-            forecast revenue, and automate sales pipelines
-            with customizable stages.
-          </p>
+          <a href="https://crm.demo.horilla.com/" class="btn btn-secondary">Live Demo</a>
         </div>
+      </section>
 
-        <div class="card">
-          <h3>Accounts & Contacts</h3>
-          <p>
-            Manage organizations and customer contacts
-            with relationship tracking and activity timelines.
-          </p>
-        </div>
+      <!-- Features -->
+      <section class="section">
+        <h2>Core Features</h2>
 
-        <div class="card">
-          <h3>Campaign Analytics</h3>
-          <p>
-            Create marketing campaigns, monitor ROI,
-            and track conversions from multiple lead sources.
-          </p>
-        </div>
+        <p class="section-desc">Enterprise-grade CRM modules designed for customer management, sales growth, marketing campaigns, analytics, and real-time collaboration.</p>
 
-        <div class="card">
-          <h3>Real-time Notifications</h3>
-          <p>
-            WebSocket-powered live notifications,
-            alerts, and activity updates across the platform.
-          </p>
-        </div>
-
-        <div class="card">
-          <h3>Interactive Dashboards</h3>
-          <p>
-            Visual reports, widgets, analytics,
-            and exportable business intelligence data.
-          </p>
-        </div>
-
-        <div class="card">
-          <h3>Multi-language Support</h3>
-          <p>
-            Supports 25+ languages including English,
-            Arabic, German, French, and Korean.
-          </p>
-        </div>
-
-      </div>
-
-    </section>
-
-    <!-- Installation -->
-    <section class="section">
-
-      <h2>Quick Installation</h2>
-
-      <div class="install-box">
-
-        <div class="install-header">
-          <span class="install-label">shell</span>
-
-          <button class="copy-btn"
-                  onclick="copyCode(this, 'git clone https://github.com/horilla-opensource/horilla-crm.git\ncd horilla-crm\ndocker-compose up --build')">
-            copy
-          </button>
-        </div>
-
-<pre><code><span class="cm">$</span> git clone https://github.com/horilla-opensource/horilla-crm.git
-<span class="cm">$</span> cd horilla-crm
-<span class="cm">$</span> docker-compose up --build</code></pre>
-
-      </div>
-
-    </section>
-
-    <!-- Quick Start -->
-    <section class="section">
-
-      <h2>Quick Start</h2>
-
-      <div class="install-box">
-
-        <div class="install-header">
-          <span class="install-label">shell</span>
-
-          <button class="copy-btn"
-                  onclick="copyCode(this, 'python manage.py migrate\npython manage.py create_horilla_user\npython manage.py runserver')">
-            copy
-          </button>
-        </div>
-
-<pre><code><span class="cm"># Run migrations</span>
-python manage.py migrate
-
-<span class="cm"># Create admin user</span>
-python manage.py create_horilla_user
-
-<span class="cm"># Start development server</span>
-python manage.py runserver</code></pre>
-
-      </div>
-
-    </section>
-
-    <!-- Tech Stack -->
-    <section class="section">
-
-      <h2>Technology Stack</h2>
-
-      <div class="cards">
-
-        <div class="card">
-          <h3>Django 6.0+</h3>
-          <p>
-            Modern Python backend with scalable architecture
-            and enterprise-ready security features.
-          </p>
-        </div>
-
-        <div class="card">
-          <h3>HTMX + TailwindCSS</h3>
-          <p>
-            Fast dynamic interfaces without heavy frontend
-            frameworks or SPA complexity.
-          </p>
-        </div>
-
-        <div class="card">
-          <h3>PostgreSQL</h3>
-          <p>
-            Optimized relational database support
-            with indexing and scalable query performance.
-          </p>
-        </div>
-
-        <div class="card">
-          <h3>Docker Ready</h3>
-          <p>
-            Production-ready Docker and Docker Compose
-            setup with optional Nginx integration.
-          </p>
-        </div>
-
-      </div>
-
-    </section>
-
-    <!-- Links -->
-    <section class="section">
-
-      <h2>Project Links</h2>
-
-      <div class="link-grid">
-
-        <a href="https://github.com/horilla-opensource/horilla-crm"
-           class="link-card">
-
-          <div class="link-icon">⌥</div>
-
-          <div class="link-body">
-            <span class="link-name">GitHub Repository</span>
-            <span class="link-desc">
-              Source code, releases, contributions
-            </span>
+        <div class="cards">
+          <div class="card">
+            <h3>Lead & Opportunity Management</h3>
+            <p>Track leads, manage opportunities, forecast revenue, and automate sales pipelines with customizable stages.</p>
           </div>
 
-          <span class="link-arrow">→</span>
-        </a>
-
-        <a href="https://docs.horilla.com/crm/functional/v1.0/"
-           class="link-card">
-
-          <div class="link-icon">◫</div>
-
-          <div class="link-body">
-            <span class="link-name">Documentation</span>
-            <span class="link-desc">
-              Setup guides and CRM usage documentation
-            </span>
+          <div class="card">
+            <h3>Accounts & Contacts</h3>
+            <p>Manage organizations and customer contacts with relationship tracking and activity timelines.</p>
           </div>
 
-          <span class="link-arrow">→</span>
-        </a>
-
-        <a href="https://crm.demo.horilla.com/"
-           class="link-card">
-
-          <div class="link-icon">◎</div>
-
-          <div class="link-body">
-            <span class="link-name">Live Demo</span>
-            <span class="link-desc">
-              Explore the CRM platform in real-time
-            </span>
+          <div class="card">
+            <h3>Campaign Analytics</h3>
+            <p>Create marketing campaigns, monitor ROI, and track conversions from multiple lead sources.</p>
           </div>
 
-          <span class="link-arrow">→</span>
-        </a>
-
-        <a href="https://www.horilla.com/contact-us/"
-           class="link-card">
-
-          <div class="link-icon">✉</div>
-
-          <div class="link-body">
-            <span class="link-name">Enterprise Support</span>
-            <span class="link-desc">
-              Professional support and onboarding
-            </span>
+          <div class="card">
+            <h3>Real-time Notifications</h3>
+            <p>WebSocket-powered live notifications, alerts, and activity updates across the platform.</p>
           </div>
 
-          <span class="link-arrow">→</span>
-        </a>
+          <div class="card">
+            <h3>Interactive Dashboards</h3>
+            <p>Visual reports, widgets, analytics, and exportable business intelligence data.</p>
+          </div>
 
-      </div>
+          <div class="card">
+            <h3>Multi-language Support</h3>
+            <p>Supports 25+ languages including English, Arabic, German, French, and Korean.</p>
+          </div>
+        </div>
+      </section>
 
-    </section>
+      <!-- Installation -->
+      <section class="section">
+        <h2>Quick Installation</h2>
 
-    <!-- Footer -->
-    <footer class="footer">
+        <div class="install-box">
+          <div class="install-header">
+            <span class="install-label">shell</span>
 
-      <p>
-        Horilla CRM — Open Source Django CRM Platform
-      </p>
+            <button class="copy-btn" onclick="copyCode(this, 'git clone https://github.com/horilla-opensource/horilla-crm.git\ncd horilla-crm\ndocker-compose up --build')">copy</button>
+          </div>
 
-      <p style="margin-top: 10px;">
-        Built with ❤️ by the Horilla team.
-      </p>
+          <pre>
+            <code>$ git clone https://github.com/horilla-opensource/horilla-crm.git $ cd horilla-crm $ docker-compose up --build</code>
+          </pre>
+        </div>
+      </section>
 
-      <p style="margin-top: 12px;">
-        Powered by
-        <code>Django</code>,
-        <code>HTMX</code>,
-        <code>PostgreSQL</code>,
-        and
-        <code>Docker</code>
-      </p>
+      <!-- Quick Start -->
+      <section class="section">
+        <h2>Quick Start</h2>
 
-    </footer>
+        <div class="install-box">
+          <div class="install-header">
+            <span class="install-label">shell</span>
 
-  </div>
+            <button class="copy-btn" onclick="copyCode(this, 'python manage.py migrate\npython manage.py createsuperuser\npython manage.py runserver')">copy</button>
+          </div>
 
-  <script>
+          <pre>
+            <code>
+              # Run migrations python manage.py migrate
+
+              # Create admin user python manage.py create_horilla_user
+
+              # Start development server python manage.py runserver
+            </code>
+          </pre>
+        </div>
+      </section>
+
+      <!-- Tech Stack -->
+      <section class="section">
+        <h2>Technology Stack</h2>
+
+        <div class="cards">
+          <div class="card">
+            <h3>Django 6.0+</h3>
+            <p>Modern Python backend with scalable architecture and enterprise-ready security features.</p>
+          </div>
+
+          <div class="card">
+            <h3>HTMX + TailwindCSS</h3>
+            <p>Fast dynamic interfaces without heavy frontend frameworks or SPA complexity.</p>
+          </div>
+
+          <div class="card">
+            <h3>PostgreSQL</h3>
+            <p>Optimized relational database support with indexing and scalable query performance.</p>
+          </div>
+
+          <div class="card">
+            <h3>Docker Ready</h3>
+            <p>Production-ready Docker and Docker Compose setup with optional Nginx integration.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- Links -->
+      <section class="section">
+        <h2>Project Links</h2>
+
+        <div class="link-grid">
+          <a href="https://github.com/horilla-opensource/horilla-crm" class="link-card">
+            <div class="link-icon">⌥</div>
+
+            <div class="link-body">
+              <span class="link-name">GitHub Repository</span>
+              <span class="link-desc">Source code, releases, contributions</span>
+            </div>
+
+            <span class="link-arrow">→</span>
+          </a>
+
+          <a href="https://docs.horilla.com/crm/functional/v1.0/" class="link-card">
+            <div class="link-icon">◫</div>
+
+            <div class="link-body">
+              <span class="link-name">Documentation</span>
+              <span class="link-desc">Setup guides and CRM usage documentation</span>
+            </div>
+
+            <span class="link-arrow">→</span>
+          </a>
+
+          <a href="https://crm.demo.horilla.com/" class="link-card">
+            <div class="link-icon">◎</div>
+
+            <div class="link-body">
+              <span class="link-name">Live Demo</span>
+              <span class="link-desc">Explore the CRM platform in real-time</span>
+            </div>
+
+            <span class="link-arrow">→</span>
+          </a>
+
+          <a href="https://www.horilla.com/contact-us/" class="link-card">
+            <div class="link-icon">✉</div>
+
+            <div class="link-body">
+              <span class="link-name">Enterprise Support</span>
+              <span class="link-desc">Professional support and onboarding</span>
+            </div>
+
+            <span class="link-arrow">→</span>
+          </a>
+        </div>
+      </section>
+
+      <!-- Footer -->
+      <footer class="footer">
+        <p>Horilla CRM — Open Source Django CRM Platform</p>
+
+        <p style="margin-top: 10px;">Built with ❤️ by the Horilla team.</p>
+
+        <p style="margin-top: 12px;">
+          Powered by
+          <code>Django</code>,
+          <code>HTMX</code>,
+          <code>PostgreSQL</code>, and
+          <code>Docker</code>
+        </p>
+      </footer>
+    </div>
+
+    <script>
     function copyCode(btn, text) {
       navigator.clipboard.writeText(text).then(() => {
         btn.classList.add('copied');
@@ -645,6 +542,5 @@ python manage.py runserver</code></pre>
       });
     }
   </script>
-
-</body>
+  </body>
 </html>
