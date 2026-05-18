@@ -1,0 +1,650 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Horilla CRM — Open Source Django CRM Platform</title>
+
+  <meta name="description" content="Horilla CRM is a free and open-source Django CRM platform for enterprise sales management, lead tracking, campaigns, analytics, and customer engagement.">
+  <meta name="keywords" content="Horilla CRM, Django CRM, Open Source CRM, Python CRM, Sales CRM, Lead Management, CRM Software">
+  <meta name="author" content="Horilla">
+  <meta name="robots" content="index, follow">
+
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Horilla CRM — Open Source Django CRM">
+  <meta property="og:description" content="Enterprise CRM platform built with Django, HTMX, PostgreSQL, and WebSockets.">
+  <meta property="og:url" content="https://crm.demo.horilla.com/">
+  <meta property="og:site_name" content="Horilla CRM">
+
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Horilla CRM — Open Source Django CRM">
+  <meta name="twitter:description" content="Free and open-source CRM platform for modern businesses.">
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    "name": "Horilla CRM",
+    "applicationCategory": "BusinessApplication",
+    "operatingSystem": "Linux, Windows, macOS",
+    "description": "Open source Django CRM platform for sales tracking, lead management, customer engagement, reporting, and workflow automation.",
+    "license": "https://www.gnu.org/licenses/lgpl-2.1.html",
+    "url": "https://github.com/horilla-opensource/horilla-crm",
+    "downloadUrl": "https://github.com/horilla-opensource/horilla-crm",
+    "programmingLanguage": "Python",
+    "softwareVersion": "1.10.1",
+    "author": {
+      "@type": "Organization",
+      "name": "Horilla"
+    }
+  }
+  </script>
+
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: Arial, sans-serif;
+      background: #0f172a;
+      color: #f8fafc;
+      line-height: 1.6;
+    }
+
+    .container {
+      max-width: 1150px;
+      margin: auto;
+      padding: 40px 20px;
+    }
+
+    .hero {
+      text-align: center;
+      padding: 90px 20px;
+    }
+
+    .logo {
+      width: 78px;
+      height: 78px;
+      margin-bottom: 24px;
+    }
+
+    .badge {
+      display: inline-block;
+      background: rgba(59, 130, 246, 0.15);
+      color: #60a5fa;
+      padding: 8px 18px;
+      border-radius: 999px;
+      font-size: 14px;
+      margin-bottom: 22px;
+      border: 1px solid rgba(96, 165, 250, 0.3);
+    }
+
+    h1 {
+      font-size: 58px;
+      font-weight: 700;
+      margin-bottom: 18px;
+    }
+
+    .highlight {
+      color: #3b82f6;
+    }
+
+    .subtitle {
+      max-width: 850px;
+      margin: auto;
+      font-size: 20px;
+      color: #cbd5e1;
+    }
+
+    .buttons {
+      margin-top: 40px;
+      display: flex;
+      gap: 20px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    .btn {
+      text-decoration: none;
+      padding: 14px 30px;
+      border-radius: 14px;
+      font-weight: bold;
+      transition: 0.3s ease;
+    }
+
+    .btn-primary {
+      background: #3b82f6;
+      color: white;
+    }
+
+    .btn-primary:hover {
+      background: #2563eb;
+    }
+
+    .btn-secondary {
+      border: 1px solid #334155;
+      color: #e2e8f0;
+      background: #111827;
+    }
+
+    .btn-secondary:hover {
+      background: #1e293b;
+    }
+
+    .section {
+      margin-top: 90px;
+    }
+
+    .section h2 {
+      font-size: 38px;
+      margin-bottom: 20px;
+      text-align: center;
+    }
+
+    .section-desc {
+      text-align: center;
+      color: #94a3b8;
+      max-width: 760px;
+      margin: auto;
+      margin-bottom: 20px;
+    }
+
+    .cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 24px;
+      margin-top: 40px;
+    }
+
+    .card {
+      background: #111827;
+      padding: 28px;
+      border-radius: 22px;
+      border: 1px solid #1e293b;
+      transition: 0.3s ease;
+    }
+
+    .card:hover {
+      transform: translateY(-5px);
+      border-color: #3b82f6;
+    }
+
+    .card h3 {
+      margin-bottom: 14px;
+      color: #60a5fa;
+      font-size: 20px;
+    }
+
+    .card p {
+      color: #cbd5e1;
+      font-size: 15px;
+    }
+
+    .install-box {
+      background: #111827;
+      border: 1px solid #1e293b;
+      border-radius: 20px;
+      overflow: hidden;
+      margin-top: 30px;
+    }
+
+    .install-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 20px;
+      background: #0f172a;
+      border-bottom: 1px solid #1e293b;
+    }
+
+    .install-label {
+      font-size: 13px;
+      color: #64748b;
+      font-family: monospace;
+    }
+
+    .copy-btn {
+      background: transparent;
+      border: 1px solid #334155;
+      border-radius: 8px;
+      padding: 4px 12px;
+      font-size: 12px;
+      color: #94a3b8;
+      cursor: pointer;
+      transition: 0.2s ease;
+    }
+
+    .copy-btn:hover {
+      background: #1e293b;
+      color: #e2e8f0;
+    }
+
+    .copy-btn.copied {
+      color: #34d399;
+      border-color: #064e3b;
+      background: #022c22;
+    }
+
+    pre {
+      padding: 24px;
+      overflow-x: auto;
+      font-family: monospace;
+      font-size: 15px;
+      line-height: 1.8;
+    }
+
+    code {
+      font-family: monospace;
+    }
+
+    .kw  { color: #a78bfa; }
+    .fn  { color: #60a5fa; }
+    .st  { color: #34d399; }
+    .cm  { color: #64748b; font-style: italic; }
+    .num { color: #fbbf24; }
+
+    .link-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 16px;
+      margin-top: 40px;
+    }
+
+    .link-card {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 18px 20px;
+      border-radius: 16px;
+      background: #111827;
+      border: 1px solid #1e293b;
+      color: #f8fafc;
+      text-decoration: none;
+      transition: 0.3s ease;
+    }
+
+    .link-card:hover {
+      transform: translateY(-3px);
+      border-color: #3b82f6;
+    }
+
+    .link-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: 10px;
+      background: #1e293b;
+      border: 1px solid #334155;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      flex-shrink: 0;
+    }
+
+    .link-body {
+      flex: 1;
+    }
+
+    .link-name {
+      font-size: 14px;
+      font-weight: bold;
+      display: block;
+      color: #e2e8f0;
+    }
+
+    .link-desc {
+      font-size: 12px;
+      color: #64748b;
+      display: block;
+      margin-top: 2px;
+    }
+
+    .link-arrow {
+      font-size: 16px;
+      color: #334155;
+    }
+
+    .footer {
+      text-align: center;
+      margin-top: 100px;
+      padding: 40px 20px;
+      color: #94a3b8;
+      border-top: 1px solid #1e293b;
+    }
+
+    .footer code {
+      color: #60a5fa;
+      background: #111827;
+      border: 1px solid #1e293b;
+      padding: 2px 8px;
+      border-radius: 4px;
+    }
+
+    @media (max-width: 768px) {
+      h1 {
+        font-size: 42px;
+      }
+
+      .subtitle {
+        font-size: 18px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="container">
+
+    <!-- Hero -->
+    <section class="hero">
+
+      <img src="static/favicon.ico" alt="Horilla CRM Logo" class="logo">
+
+      <div class="badge">
+        Open Source Enterprise CRM
+      </div>
+
+      <h1>
+        Horilla CRM
+        <span class="highlight">Built for Modern Businesses</span>
+      </h1>
+
+      <p class="subtitle">
+        Free and open-source CRM platform powered by
+        <strong>Django</strong>, <strong>HTMX</strong>, and
+        <strong>PostgreSQL</strong> for lead management,
+        sales pipelines, customer engagement, campaigns,
+        analytics, and workflow automation.
+      </p>
+
+      <div class="buttons">
+        <a href="https://github.com/horilla-opensource/horilla-crm"
+           class="btn btn-primary">
+          GitHub Repository
+        </a>
+
+        <a href="https://crm.demo.horilla.com/"
+           class="btn btn-secondary">
+          Live Demo
+        </a>
+      </div>
+
+    </section>
+
+    <!-- Features -->
+    <section class="section">
+
+      <h2>Core Features</h2>
+
+      <p class="section-desc">
+        Enterprise-grade CRM modules designed for customer
+        management, sales growth, marketing campaigns,
+        analytics, and real-time collaboration.
+      </p>
+
+      <div class="cards">
+
+        <div class="card">
+          <h3>Lead & Opportunity Management</h3>
+          <p>
+            Track leads, manage opportunities,
+            forecast revenue, and automate sales pipelines
+            with customizable stages.
+          </p>
+        </div>
+
+        <div class="card">
+          <h3>Accounts & Contacts</h3>
+          <p>
+            Manage organizations and customer contacts
+            with relationship tracking and activity timelines.
+          </p>
+        </div>
+
+        <div class="card">
+          <h3>Campaign Analytics</h3>
+          <p>
+            Create marketing campaigns, monitor ROI,
+            and track conversions from multiple lead sources.
+          </p>
+        </div>
+
+        <div class="card">
+          <h3>Real-time Notifications</h3>
+          <p>
+            WebSocket-powered live notifications,
+            alerts, and activity updates across the platform.
+          </p>
+        </div>
+
+        <div class="card">
+          <h3>Interactive Dashboards</h3>
+          <p>
+            Visual reports, widgets, analytics,
+            and exportable business intelligence data.
+          </p>
+        </div>
+
+        <div class="card">
+          <h3>Multi-language Support</h3>
+          <p>
+            Supports 25+ languages including English,
+            Arabic, German, French, and Korean.
+          </p>
+        </div>
+
+      </div>
+
+    </section>
+
+    <!-- Installation -->
+    <section class="section">
+
+      <h2>Quick Installation</h2>
+
+      <div class="install-box">
+
+        <div class="install-header">
+          <span class="install-label">shell</span>
+
+          <button class="copy-btn"
+                  onclick="copyCode(this, 'git clone https://github.com/horilla-opensource/horilla-crm.git\ncd horilla-crm\ndocker-compose up --build')">
+            copy
+          </button>
+        </div>
+
+<pre><code><span class="cm">$</span> git clone https://github.com/horilla-opensource/horilla-crm.git
+<span class="cm">$</span> cd horilla-crm
+<span class="cm">$</span> docker-compose up --build</code></pre>
+
+      </div>
+
+    </section>
+
+    <!-- Quick Start -->
+    <section class="section">
+
+      <h2>Quick Start</h2>
+
+      <div class="install-box">
+
+        <div class="install-header">
+          <span class="install-label">shell</span>
+
+          <button class="copy-btn"
+                  onclick="copyCode(this, 'python manage.py migrate\npython manage.py create_horilla_user\npython manage.py runserver')">
+            copy
+          </button>
+        </div>
+
+<pre><code><span class="cm"># Run migrations</span>
+python manage.py migrate
+
+<span class="cm"># Create admin user</span>
+python manage.py create_horilla_user
+
+<span class="cm"># Start development server</span>
+python manage.py runserver</code></pre>
+
+      </div>
+
+    </section>
+
+    <!-- Tech Stack -->
+    <section class="section">
+
+      <h2>Technology Stack</h2>
+
+      <div class="cards">
+
+        <div class="card">
+          <h3>Django 6.0+</h3>
+          <p>
+            Modern Python backend with scalable architecture
+            and enterprise-ready security features.
+          </p>
+        </div>
+
+        <div class="card">
+          <h3>HTMX + TailwindCSS</h3>
+          <p>
+            Fast dynamic interfaces without heavy frontend
+            frameworks or SPA complexity.
+          </p>
+        </div>
+
+        <div class="card">
+          <h3>PostgreSQL</h3>
+          <p>
+            Optimized relational database support
+            with indexing and scalable query performance.
+          </p>
+        </div>
+
+        <div class="card">
+          <h3>Docker Ready</h3>
+          <p>
+            Production-ready Docker and Docker Compose
+            setup with optional Nginx integration.
+          </p>
+        </div>
+
+      </div>
+
+    </section>
+
+    <!-- Links -->
+    <section class="section">
+
+      <h2>Project Links</h2>
+
+      <div class="link-grid">
+
+        <a href="https://github.com/horilla-opensource/horilla-crm"
+           class="link-card">
+
+          <div class="link-icon">⌥</div>
+
+          <div class="link-body">
+            <span class="link-name">GitHub Repository</span>
+            <span class="link-desc">
+              Source code, releases, contributions
+            </span>
+          </div>
+
+          <span class="link-arrow">→</span>
+        </a>
+
+        <a href="https://docs.horilla.com/crm/functional/v1.0/"
+           class="link-card">
+
+          <div class="link-icon">◫</div>
+
+          <div class="link-body">
+            <span class="link-name">Documentation</span>
+            <span class="link-desc">
+              Setup guides and CRM usage documentation
+            </span>
+          </div>
+
+          <span class="link-arrow">→</span>
+        </a>
+
+        <a href="https://crm.demo.horilla.com/"
+           class="link-card">
+
+          <div class="link-icon">◎</div>
+
+          <div class="link-body">
+            <span class="link-name">Live Demo</span>
+            <span class="link-desc">
+              Explore the CRM platform in real-time
+            </span>
+          </div>
+
+          <span class="link-arrow">→</span>
+        </a>
+
+        <a href="https://www.horilla.com/contact-us/"
+           class="link-card">
+
+          <div class="link-icon">✉</div>
+
+          <div class="link-body">
+            <span class="link-name">Enterprise Support</span>
+            <span class="link-desc">
+              Professional support and onboarding
+            </span>
+          </div>
+
+          <span class="link-arrow">→</span>
+        </a>
+
+      </div>
+
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+
+      <p>
+        Horilla CRM — Open Source Django CRM Platform
+      </p>
+
+      <p style="margin-top: 10px;">
+        Built with ❤️ by the Horilla team.
+      </p>
+
+      <p style="margin-top: 12px;">
+        Powered by
+        <code>Django</code>,
+        <code>HTMX</code>,
+        <code>PostgreSQL</code>,
+        and
+        <code>Docker</code>
+      </p>
+
+    </footer>
+
+  </div>
+
+  <script>
+    function copyCode(btn, text) {
+      navigator.clipboard.writeText(text).then(() => {
+        btn.classList.add('copied');
+        btn.textContent = 'copied!';
+
+        setTimeout(() => {
+          btn.classList.remove('copied');
+          btn.textContent = 'copy';
+        }, 2000);
+      });
+    }
+  </script>
+
+</body>
+</html>
