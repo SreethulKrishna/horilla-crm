@@ -3,18 +3,20 @@
 # Standard library imports
 import logging
 
-# Third-party imports
-import pycountry
-
 # Third-party imports (Django)
 from django import forms
+
+# Third-party imports (Django)
+from django.db.models import Q
 
 # First-party / Horilla imports
 from horilla.auth.models import User
 from horilla.contrib.core.mixins import OwnerQuerysetMixin
 from horilla.contrib.generics.forms import HorillaModelForm, HorillaMultiStepForm
-from horilla.contrib.mail.models import HorillaMailConfiguration
+from horilla.contrib.mail.models import HorillaMailConfiguration, HorillaMailTemplate
+from horilla.contrib.notifications.models import NotificationTemplate
 from horilla.urls import reverse, reverse_lazy
+from horilla.utils.choices import get_subdivision_choices
 
 # First-party / Horilla apps
 from horilla_crm.accounts.models import Account
@@ -25,9 +27,9 @@ from horilla_crm.opportunities.models import Opportunity
 from .models import (
     EmailToLeadConfig,
     Lead,
+    LeadAssignmentCondition,
+    LeadAssignmentMatchCriteria,
     LeadStatus,
-    ScoringCondition,
-    ScoringCriterion,
 )
 
 logger = logging.getLogger(__name__)
@@ -41,6 +43,7 @@ class LeadFormClass(OwnerQuerysetMixin, HorillaMultiStepForm):
 
         model = Lead
         fields = "__all__"
+        exclude = ["lead_score"]
 
     step_fields = {
         1: [
@@ -61,10 +64,6 @@ class LeadFormClass(OwnerQuerysetMixin, HorillaMultiStepForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        if self.current_step < len(self.step_fields):
-            self.fields["created_by"].required = False
-            self.fields["updated_by"].required = False
-
         self.fields["lead_status"].queryset = LeadStatus.objects.filter(is_final=False)
         self.fields["country"].widget.attrs.update(
             {
@@ -84,21 +83,11 @@ class LeadFormClass(OwnerQuerysetMixin, HorillaMultiStepForm):
 
         if "country" in self.data:
             country_code = self.data.get("country")
-            self.fields["state"].choices = self.get_subdivision_choices(country_code)
+            self.fields["state"].choices = get_subdivision_choices(country_code)
         elif self.instance.pk and self.instance.country:
-            self.fields["state"].choices = self.get_subdivision_choices(
+            self.fields["state"].choices = get_subdivision_choices(
                 self.instance.country.code
             )
-
-    def get_subdivision_choices(self, country_code):
-        """Get subdivision choices for a given country code."""
-        try:
-            subdivisions = list(
-                pycountry.subdivisions.get(country_code=country_code.upper())
-            )
-            return [(sub.code, sub.name) for sub in subdivisions]
-        except Exception:
-            return []
 
 
 class LeadSingleForm(OwnerQuerysetMixin, HorillaModelForm):
@@ -107,30 +96,33 @@ class LeadSingleForm(OwnerQuerysetMixin, HorillaModelForm):
     Inherits from HorillaModelForm to preserve all existing behavior.
     """
 
+    field_order = [
+        "lead_owner",
+        "title",
+        "first_name",
+        "last_name",
+        "email",
+        "contact_number",
+        "lead_source",
+        "lead_status",
+        "lead_company",
+        "no_of_employees",
+        "industry",
+        "annual_revenue",
+        "country",
+        "state",
+        "city",
+        "zip_code",
+        "fax",
+        "requirements",
+    ]
+
     class Meta:
         """Meta class for LeadStatusForm"""
 
         model = Lead
-        fields = [
-            "lead_owner",
-            "title",
-            "first_name",
-            "last_name",
-            "email",
-            "contact_number",
-            "lead_source",
-            "lead_status",
-            "lead_company",
-            "no_of_employees",
-            "industry",
-            "annual_revenue",
-            "country",
-            "state",
-            "city",
-            "zip_code",
-            "fax",
-            "requirements",
-        ]
+        fields = "__all__"
+        exclude = ["lead_score"]
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -153,21 +145,11 @@ class LeadSingleForm(OwnerQuerysetMixin, HorillaModelForm):
 
         if "country" in self.data:
             country_code = self.data.get("country")
-            self.fields["state"].choices = self.get_subdivision_choices(country_code)
+            self.fields["state"].choices = get_subdivision_choices(country_code)
         elif self.instance.pk and self.instance.country:
-            self.fields["state"].choices = self.get_subdivision_choices(
+            self.fields["state"].choices = get_subdivision_choices(
                 self.instance.country.code
             )
-
-    def get_subdivision_choices(self, country_code):
-        """Get subdivision choices for a given country code."""
-        try:
-            subdivisions = list(
-                pycountry.subdivisions.get(country_code=country_code.upper())
-            )
-            return [(sub.code, sub.name) for sub in subdivisions]
-        except Exception:
-            return []
 
 
 class LeadConversionForm(forms.Form):
@@ -366,11 +348,14 @@ class LeadStatusForm(HorillaModelForm):
     Inherits from HorillaModelForm to preserve all existing behavior.
     """
 
+    field_order = ["name", "probability", "order", "is_final"]
+
     class Meta:
         """Meta class for LeadStatusForm"""
 
         model = LeadStatus
-        fields = ["name", "probability", "is_final", "order"]
+        fields = "__all__"
+        exclude = ["color"]
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -391,11 +376,14 @@ class EmailToLeadForm(HorillaModelForm):
     Inherits from HorillaModelForm to preserve all existing behavior.
     """
 
+    field_order = ["mail", "lead_owner", "accept_emails_from", "keywords"]
+
     class Meta:
         """Meta class for LeadStatusForm"""
 
         model = EmailToLeadConfig
-        fields = ["mail", "lead_owner", "accept_emails_from", "keywords"]
+        fields = "__all__"
+        exclude = ["last_fetched"]
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -404,36 +392,93 @@ class EmailToLeadForm(HorillaModelForm):
         )
 
 
-class ScoringCriterionForm(HorillaModelForm):
-    """Form for creating and editing scoring criteria."""
+class AssignmentRuleConditionForm(HorillaModelForm):
+    """Form for creating and editing lead assignment rule conditions."""
+
+    field_order = [
+        "rule",
+        "assign_to_type",
+        "assign_to_users",
+        "assign_to_roles",
+        "notify_method",
+        "mail_template",
+        "notification_template",
+    ]
 
     def __init__(self, *args, **kwargs):
-        """Initialize scoring criterion form with condition model."""
-        kwargs["condition_model"] = ScoringCondition
+        kwargs["condition_model"] = LeadAssignmentMatchCriteria
         super().__init__(*args, **kwargs)
 
+        current_type = "user"
+        if self.instance and self.instance.pk:
+            current_type = self.instance.assign_to_type or "user"
+        elif self.data.get("assign_to_type"):
+            current_type = self.data["assign_to_type"]
+
+        self.fields["assign_to_type"].widget.attrs.update(
+            {
+                "hx-post": reverse_lazy("leads:toggle_assign_to_field"),
+                "hx-target": "#assign_to_users_container",
+                "hx-swap": "outerHTML",
+                "hx-trigger": "change",
+            }
+        )
+        self.fields["assign_to_users"].widget.attrs["container_style"] = (
+            "" if current_type == "user" else "display:none"
+        )
+        self.fields["assign_to_roles"].widget.attrs["container_style"] = (
+            "" if current_type == "role" else "display:none"
+        )
+
+        # --- notify_method conditional fields ---
+        current_notify = ""
+        if self.instance and self.instance.pk:
+            current_notify = self.instance.notify_method or ""
+        elif self.data.get("notify_method"):
+            current_notify = self.data["notify_method"]
+
+        lead_template_qs = Q(content_type__isnull=True) | Q(
+            content_type__app_label="leads", content_type__model="lead"
+        )
+        self.fields["mail_template"].queryset = HorillaMailTemplate.objects.filter(
+            lead_template_qs
+        )
+        self.fields["notification_template"].queryset = (
+            NotificationTemplate.objects.filter(lead_template_qs)
+        )
+
+        self.fields["notify_method"].widget.attrs.update(
+            {
+                "hx-post": reverse_lazy("leads:toggle_notify_method_field"),
+                "hx-target": "#mail_template_container",
+                "hx-swap": "outerHTML",
+                "hx-trigger": "change",
+                "hx-include": "[name='mail_template'],[name='notification_template']",
+            }
+        )
+        show_mail = current_notify in ("email", "both")
+        show_notification = current_notify in ("notification", "both")
+        self.fields["mail_template"].widget.attrs["container_style"] = (
+            "" if show_mail else "display:none"
+        )
+        self.fields["notification_template"].widget.attrs["container_style"] = (
+            "" if show_notification else "display:none"
+        )
+
     def clean(self):
-        """Process multiple condition rows from form data"""
         cleaned_data = super().clean()
-
         condition_rows = self._extract_condition_rows()
-
         if not condition_rows:
-            raise forms.ValidationError("At least one condition must be provided.")
-
+            raise forms.ValidationError(
+                "At least one matching criterion must be provided."
+            )
         cleaned_data["condition_rows"] = condition_rows
-
         return cleaned_data
 
     class Meta:
-        """Meta options for ScoringCriterionForm."""
+        """
+        Meta options for AssignmentRuleConditionForm. Specifies the model and fields to include in the form.
+        """
 
-        model = ScoringCriterion
-        fields = ["rule", "points", "operation_type"]
-        widgets = {
-            "points": forms.NumberInput(
-                attrs={
-                    "class": "text-color-600 p-2 w-full border border-dark-50 rounded-md mt-1"
-                }
-            ),
-        }
+        model = LeadAssignmentCondition
+        fields = "__all__"

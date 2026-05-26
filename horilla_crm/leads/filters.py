@@ -2,7 +2,8 @@
 
 from horilla.contrib.core.mixins import OwnerFiltersetMixin
 from horilla.contrib.generics.filters import HorillaFilterSet
-from horilla_crm.leads.models import Lead, LeadStatus, ScoringRule
+
+from ..leads.models import Lead, LeadAssignmentRule, LeadStatus
 
 
 class LeadFilter(OwnerFiltersetMixin, HorillaFilterSet):
@@ -29,13 +30,13 @@ class LeadStatusFilter(HorillaFilterSet):
         search_fields = ["name"]
 
 
-class ScoringRuleFilter(HorillaFilterSet):
-    """Filter set for scoring rules."""
+class LeadAssignmentFilter(HorillaFilterSet):
+    """Lead Assignment Filter"""
 
     class Meta:
-        """Meta options for ScoringRuleFilter."""
+        """Meta class for Lead Assignment Filter"""
 
-        model = ScoringRule
+        model = LeadAssignmentRule
         fields = "__all__"
         exclude = ["additional_info"]
-        search_fields = ["customer_role_name"]
+        search_fields = ["name"]

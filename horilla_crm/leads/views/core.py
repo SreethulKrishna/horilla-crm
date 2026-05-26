@@ -87,7 +87,6 @@ class LeadView(LoginRequiredMixin, HorillaView):
 class LeadNavbar(LoginRequiredMixin, HorillaNavView):
     """Lead Navbar"""
 
-    nav_title = Lead._meta.verbose_name_plural
     search_url = reverse_lazy("leads:leads_list")
     main_url = reverse_lazy("leads:leads_view")
     filterset_class = LeadFilter
@@ -1057,4 +1056,4 @@ class LeadRelatedLists(LoginRequiredMixin, HorillaRelatedListSectionView):
             },
         }
 
-    excluded_related_lists = ["lead_campaign_members"]
+    excluded_related_lists = ["lead_campaign_members", "bookings"]

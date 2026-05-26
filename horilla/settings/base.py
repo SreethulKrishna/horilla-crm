@@ -90,6 +90,8 @@ INSTALLED_APPS = [
     "horilla.contrib.process.approvals",
     "horilla.contrib.process.reviews",
     "horilla.contrib.cadences",
+    "horilla.contrib.workflow",
+    "horilla.contrib.meeting",
 ]
 
 

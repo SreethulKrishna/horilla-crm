@@ -1,4 +1,4 @@
-﻿"""
+"""
 This view handles the methods for user view
 """
 
@@ -66,7 +66,6 @@ class BranchNavbar(LoginRequiredMixin, HorillaNavView):
     navbar view for users
     """
 
-    nav_title = Company._meta.verbose_name_plural
     search_url = reverse_lazy("core:branches_list_view")
     main_url = reverse_lazy("core:branches_view")
     filterset_class = CompanyFilter
@@ -321,11 +320,11 @@ class CompanyInformationTabView(LoginRequiredMixin, HorillaTabView):
                 }
             )
 
-        # Business Hours Tab
+        # Business hours & shift hours tab
         if self.request.user.has_perm("core.view_businesshour"):
             tabs.append(
                 {
-                    "title": _("Business Hours"),
+                    "title": _("Working hours"),
                     "url": reverse_lazy("core:business_hour_view"),
                     "target": "business-hour-content",
                     "id": "business-hour-view",
